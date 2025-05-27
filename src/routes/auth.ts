@@ -22,7 +22,7 @@ router.get(
   })
 );
 
-// Classical Email + Password LOGIN
+
 router.post("/login", async (req: Request, res: Response): Promise<any> => {
   try {
     const { email, password } = req.body;
@@ -52,7 +52,7 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
 });
 
 // REGISTER
-router.post("/register", async (req: Request, res: Response): Promise<any> => {
+/* router.post("/register", async (req: Request, res: Response): Promise<any> => {
   try {
     const { email, password, username } = req.body;
     const existingUser = await User.findOne({ email });
@@ -73,11 +73,11 @@ router.post("/register", async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
+ */
 // GOOGLE LOGIN - REDIRECT
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-// GOOGLE CALLBACK
+// GOOGLE CALLBACK  endpoint di callback dopo l'autenticazione
 router.get(
   "/google/callback",
   passport.authenticate("google", { session: false, failureRedirect: "/" }),

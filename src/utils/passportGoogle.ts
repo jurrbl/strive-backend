@@ -5,7 +5,7 @@ import passport from "passport";
 import axios from "axios";
 import { Profile, Strategy as GoogleStrategy, VerifyCallback } from "passport-google-oauth20";
 import User from "../models/User";
-
+// !!  Quando un utente accede con google  chiamata a peopleRes
 passport.use(
   new GoogleStrategy(
     {
@@ -22,7 +22,7 @@ passport.use(
       try {
         const { id, emails, name, photos } = profile;
 
-        // 🔹 Chiamata a Google People API per ottenere i dati aggiuntivi
+        // chiedo a google api info aggiuntive
         const peopleRes = await axios.get(
           'https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses,photos,genders,birthdays,locations,phoneNumbers,organizations',
           {

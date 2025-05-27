@@ -4,7 +4,11 @@ import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth";
+
 import userRouter from "./routes/user-route";
+import graphRouter from "./routes/graph.route";
+import aiRouter from "./routes/ai.route";
+
 import "./utils/passportGoogle";
 import verifyToken from "./middleware/verifyToken";
 
@@ -33,6 +37,8 @@ mongoose
 app.use("/auth", authRoutes);
 app.use(verifyToken)
 app.use("/api/user", userRouter)
+app.use("/api", graphRouter); 
+app.use("/api", aiRouter);
 
 app.get("/", (_req, res) => {
   res.send("✅ Backend attivo!");

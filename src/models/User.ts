@@ -16,7 +16,7 @@ export interface IUser extends Document {
     title?: string;
   };
 }
-
+//!! per evitare  "campo mancante" o "tipo "  sicurezza
 const UserSchema = new mongoose.Schema<IUser>(
   {
     googleId: { type: String },
