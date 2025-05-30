@@ -14,7 +14,8 @@ aiRouter.post("/ai/summary", async (req: Request, res: Response) : Promise <any>
     return res.status(400).json({ summary: "Dati non validi per l'analisi." });
   }
 
-  const prompt = `
+  
+const prompt = `
 Analizza i seguenti dati di studio dell’utente (tempo dedicato allo studio, ai social e all’intrattenimento, giorno per giorno). 
 Fornisci un resoconto dettagliato in massimo 5 righe che includa:
 
