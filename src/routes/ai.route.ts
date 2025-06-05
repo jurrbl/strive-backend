@@ -15,19 +15,19 @@ aiRouter.post("/ai/summary", async (req: Request, res: Response) : Promise <any>
   }
 
   
-const prompt = `
-Analizza i seguenti dati di studio dell’utente (tempo dedicato allo studio, ai social e all’intrattenimento, giorno per giorno). 
-Fornisci un resoconto dettagliato in massimo 5 righe che includa:
-
-- un’analisi dei trend generali (aumento/diminuzione dello studio),
-- i giorni migliori e peggiori per lo studio,
-- un’opinione sull’efficacia generale del tempo speso,
-- e **1 o 2 consigli pratici e motivanti** per migliorare l’equilibrio tra studio e distrazioni.
-
-Il tono deve essere positivo, incoraggiante e costruttivo.
-Dati:
-${JSON.stringify(graphData, null, 2)}
-`;
+    const prompt = `
+    Analizza i seguenti dati di studio dell’utente (tempo dedicato allo studio, ai social e all’intrattenimento, giorno per giorno). 
+    Fornisci un resoconto dettagliato in massimo 5 righe che includa:
+    
+    - un’analisi dei trend generali (aumento/diminuzione dello studio),
+    - i giorni migliori e peggiori per lo studio,
+    - un’opinione sull’efficacia generale del tempo speso,
+    - e **1 o 2 consigli pratici e motivanti** per migliorare l’equilibrio tra studio e distrazioni.
+    
+    Il tono deve essere positivo, incoraggiante e costruttivo.
+    Dati:
+    ${JSON.stringify(graphData, null, 2)}
+    `;
 
   try {
    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
@@ -52,5 +52,56 @@ ${JSON.stringify(graphData, null, 2)}
     res.status(500).json({ summary: "Errore interno nel generatore AI." });
   }
 });
+
+aiRouter.post("/ai/motivational-phrases", async (req: Request, res: Response): Promise<any> => {
+  const prompt = `
+Genera 5 frasi motivazionali brevi (massimo 20 parole ciascuna), rivolte a studenti o persone che stanno cercando di restare concentrate.
+
+Le frasi devono:
+- Avere uno stile diretto, positivo e incoraggiante.
+- Essere utili per chi è stanco o distratto.
+- Essere ispirate a filosofi, poeti o grandi pensatori.
+- NON essere numerate.
+- NON contenere commenti introduttivi.
+- Ogni frase deve stare su una riga diversa.
+
+
+Formato di output:
+<frase>
+<frase>
+`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Errore Gemini:", data);
+      return res.status(500).json({ error: "Errore durante la generazione AI." });
+    }
+
+    const outputText: string = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const phrases: string[] = outputText
+      .split("\n")
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
+
+    res.json({ phrases });
+  } catch (error) {
+    console.error("Errore generale AI:", error);
+    res.status(500).json({ error: "Errore interno nel generatore AI." });
+  }
+});
+
 
 export default aiRouter;

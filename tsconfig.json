@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2020",                      // Usa funzionalità moderne ma supportate
-    "module": "CommonJS",                    // Per compatibilità con Node.js
+    "module": "CommonJS",  
+                      // Per compatibilità con Node.js
     "rootDir": "./src",                      // Origine del codice TypeScript
     "outDir": "./dist",                      // Output compilato
     "strict": true,                          // Attiva tutti i controlli di tipo
