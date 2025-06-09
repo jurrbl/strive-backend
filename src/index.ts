@@ -5,6 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import http from "http";
 import { Server as SocketIOServer } from "socket.io";
+import fetch from "node-fetch";
 
 import authRoutes from "./routes/auth";
 import userRouter from "./routes/user-route";
@@ -64,17 +65,68 @@ io.on("connection", (socket) => {
     console.log("❌ Disconnessione socket:", socket.id);
   });
 
-  // Esempio: ricevi dati dalle tab
-  socket.on("tab-activity", (data) => {
-    console.log("📥 Attività ricevuta dalla scheda:", data);
+  socket.on("tab-activity", async (data) => {
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
-    //Chiedi a chatgpt di analizzare i dati
-    
-    // Inoltra i dati al server AI o elabora come necessario
+    const prompt = `
+Classifica ogni scheda nel seguente elenco indicando solo:
 
+- titolo_scheda
+- url
+- inizio_attivita
+- tipo: "studio", "svago" o "altro"
 
+Restituisci SOLO un array JSON. Nessuna spiegazione.
 
-    // puoi salvare su DB o inoltrare a client admin
+Schede:
+${JSON.stringify(data, null, 2)}
+`;
+
+    try {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
+
+      const geminiJson = await geminiRes.json();
+      //console.dir(geminiJson, { depth: null }); // <-- utile per debug
+
+      const rawOutput = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      let parsed: any[] = [];
+      let cleaned = rawOutput?.trim();
+
+      // Rimuove blocco markdown ```json ... ```
+      if (cleaned?.startsWith("```json")) {
+        cleaned = cleaned.replace(/^```json/, "").trim();
+      }
+      if (cleaned?.endsWith("```")) {
+        cleaned = cleaned.slice(0, -3).trim();
+      }
+
+      // Rimuove tutto prima del primo [
+      const firstBracket = cleaned?.indexOf("[");
+      if (firstBracket > 0) cleaned = cleaned.slice(firstBracket);
+
+      try {
+        parsed = JSON.parse(cleaned || "[]");
+      } catch (e) {
+        console.error("❌ Errore parsing JSON da Gemini:", e, cleaned);
+      }
+      console.log("✅ Risposta JSON parsata:", parsed);
+      // inoltra al client admin o salva su DB
+      io.emit("tab-classified", parsed);
+    } catch (error) {
+      console.error("❌ Errore nella richiesta a Gemini:", error);
+    }
   });
 });
 
