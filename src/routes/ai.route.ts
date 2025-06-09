@@ -104,4 +104,54 @@ Formato di output:
 });
 
 
+aiRouter.post("/ai/analizza-status", async (req: Request, res: Response): Promise<any> => {
+  const { status } = req.body;
+
+  if (!status || typeof status !== "string") {
+    return res.status(400).json({ error: "Parametro 'status' mancante o invalido." });
+  }
+
+  const prompt = `
+Lo stato attuale del volto dell'utente è: "${status}".
+
+Basandoti solo su questo stato, rispondi in una sola frase, scegliendo tra:
+
+- L'utente sembra concentrato.
+- L'utente sembra distratto.
+- Nessun volto rilevato.
+- L'utente sembra assente.
+
+Se utile, aggiungi un consiglio motivazionale pratico (breve) per migliorare la concentrazione.
+
+Non scrivere altro. Nessun commento introduttivo o conclusivo.
+`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Errore Gemini:", data);
+      return res.status(500).json({ error: "Errore durante la valutazione AI." });
+    }
+
+    const valutazione: string = data.candidates?.[0]?.content?.parts?.[0]?.text || "Nessuna valutazione disponibile.";
+    res.json({ valutazione });
+  } catch (error) {
+    console.error("Errore AI generale:", error);
+    res.status(500).json({ error: "Errore interno nel generatore AI." });
+  }
+});
+
+
 export default aiRouter;
