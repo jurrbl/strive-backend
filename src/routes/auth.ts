@@ -28,12 +28,10 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user || !user.password) {
-      return res
-        .status(400)
-        .json({
-          message: "User not found or password missing",
-          success: false,
-        });
+      return res.status(400).json({
+        message: "User not found or password missing",
+        success: false,
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -45,8 +43,8 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
       expiresIn: "7d",
     });
-
-    res
+    console.log("User logged in: ", token);
+    return res
       .cookie("jwt", token, {
         httpOnly: true,
         sameSite: "none",
@@ -57,7 +55,7 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
       .json({ message: "Logged in!", user, success: true });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ message: "Server error", success: false });
+    return res.status(500).json({ message: "Server error", success: false });
   }
 });
 
