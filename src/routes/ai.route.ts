@@ -7,7 +7,7 @@ const aiRouter = express.Router();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
-aiRouter.post("/ai/openai-summary", async (req: Request, res: Response): Promise<any> => {
+/* aiRouter.post("/ai/openai-summary", async (req: Request, res: Response): Promise<any> => {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
   const { prompt } = req.body;
 
@@ -42,7 +42,7 @@ aiRouter.post("/ai/openai-summary", async (req: Request, res: Response): Promise
     console.error("Errore OpenAI:", error);
     res.status(500).json({ error: "Errore interno nella generazione OpenAI." });
   }
-});
+}); */
 aiRouter.post("/ai/motivational-phrases", async (req: Request, res: Response): Promise<any> => {
   const prompt = `
 Genera 5 frasi motivazionali brevi (massimo 20 parole ciascuna), rivolte a studenti o persone che stanno cercando di restare concentrate.
@@ -95,6 +95,7 @@ Formato di output:
 
 
 aiRouter.post("/ai/analizza-status", async (req: Request, res: Response): Promise<any> => {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
   const { status } = req.body;
 
   if (!status || typeof status !== "string") {
@@ -111,33 +112,35 @@ Basandoti solo su questo stato, rispondi in una sola frase, scegliendo tra:
 - Nessun volto rilevato.
 - L'utente sembra assente.
 
-Non scrivere altro. Nessun commento introduttivo o conclusivo. Tutto Molto Breve.
-`;
+Non scrivere altro. Nessun commento introduttivo o conclusivo. Tutto molto breve.
+  `;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.5,
+      }),
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Errore Gemini:", data);
+      console.error("Errore OpenAI:", data);
       return res.status(500).json({ error: "Errore durante la valutazione AI." });
     }
 
-    const valutazione: string = data.candidates?.[0]?.content?.parts?.[0]?.text || "Nessuna valutazione disponibile.";
+    const valutazione: string = data.choices?.[0]?.message?.content?.trim() || "Nessuna valutazione disponibile.";
     res.json({ valutazione });
   } catch (error) {
     console.error("Errore AI generale:", error);
-    res.status(500).json({ error: "Errore interno nel generatore AI." });
+    res.status(500).json({ error: "Errore interno nella generazione AI." });
   }
 });
 
