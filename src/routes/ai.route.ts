@@ -7,52 +7,42 @@ const aiRouter = express.Router();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
-aiRouter.post("/ai/summary", async (req: Request, res: Response) : Promise <any> => {
-  const { graphData } = req.body;
+aiRouter.post("/ai/openai-summary", async (req: Request, res: Response): Promise<any> => {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+  const { prompt } = req.body;
 
-  if (!graphData || !Array.isArray(graphData)) {
-    return res.status(400).json({ summary: "Dati non validi per l'analisi." });
+  if (!prompt || typeof prompt !== "string") {
+    return res.status(400).json({ error: "Prompt non valido." });
   }
 
-  
-    const prompt = `
-    Analizza i seguenti dati di studio dell’utente (tempo dedicato allo studio, ai social e all’intrattenimento, giorno per giorno). 
-    Fornisci un resoconto dettagliato in massimo 5 righe che includa:
-    
-    - un’analisi dei trend generali (aumento/diminuzione dello studio),
-    - i giorni migliori e peggiori per lo studio,
-    - un’opinione sull’efficacia generale del tempo speso,
-    - e **1 o 2 consigli pratici e motivanti** per migliorare l’equilibrio tra studio e distrazioni.
-    
-    Il tono deve essere positivo, incoraggiante e costruttivo.
-    Dati:
-    ${JSON.stringify(graphData, null, 2)}
-    `;
-
   try {
-   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
+        model: "gpt-3.5-turbo", // oppure "gpt-3.5-turbo"
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Errore Gemini:", data);
-      return res.status(500).json({ summary: "Errore durante la generazione AI." });
+      console.error("Errore OpenAI:", data);
+      return res.status(500).json({ error: "Errore dalla generazione OpenAI." });
     }
 
-    const output = data.candidates?.[0]?.content?.parts?.[0]?.text || "Nessun risultato.";
-    res.json({ summary: output });
+    const text = data.choices?.[0]?.message?.content || "Nessuna risposta ricevuta.";
+    res.json({ risposta: text });
   } catch (error) {
-    console.error("Errore generale AI:", error);
-    res.status(500).json({ summary: "Errore interno nel generatore AI." });
+    console.error("Errore OpenAI:", error);
+    res.status(500).json({ error: "Errore interno nella generazione OpenAI." });
   }
 });
-
 aiRouter.post("/ai/motivational-phrases", async (req: Request, res: Response): Promise<any> => {
   const prompt = `
 Genera 5 frasi motivazionali brevi (massimo 20 parole ciascuna), rivolte a studenti o persone che stanno cercando di restare concentrate.
@@ -117,13 +107,11 @@ Lo stato attuale del volto dell'utente è: "${status}".
 Basandoti solo su questo stato, rispondi in una sola frase, scegliendo tra:
 
 - L'utente sembra concentrato.
-- L'utente sembra distratto.
+- L'utente sembra distratto (scrivendo in poche parole cosa sta facendo se ride/sta al telefono/fa altro).
 - Nessun volto rilevato.
 - L'utente sembra assente.
 
-Se utile, aggiungi un consiglio motivazionale pratico (breve) per migliorare la concentrazione.
-
-Non scrivere altro. Nessun commento introduttivo o conclusivo.
+Non scrivere altro. Nessun commento introduttivo o conclusivo. Tutto Molto Breve.
 `;
 
   try {
