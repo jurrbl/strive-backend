@@ -100,11 +100,12 @@ aiRouter.post("/ai/analizza-status", async (req: Request, res: Response): Promis
   const { logs } = req.body;
 
   if (!logs || !Array.isArray(logs)) {
+    console.error("❌ Parametro logs mancante o invalido:", logs);
     return res.status(400).json({ error: "Parametro 'logs' mancante o invalido." });
   }
 
   const formattedLogs = logs.map(l => `- ${l.status} per ${l.duration} secondi`).join('\n');
-const prompt = `
+  const prompt = `
 Durante questa sessione di studio l'utente ha manifestato i seguenti stati comportamentali (stato + durata in secondi):
 ${formattedLogs}
 
@@ -121,8 +122,9 @@ Rispondi con una valutazione dettagliata che includa:
 Scrivi in modo chiaro, obiettivo e professionale. Evita giudizi personali o emotivi.
 `;
 
-  try
-  {
+  try {
+    console.log("📤 Prompt inviato all'AI:\n", prompt);
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -138,16 +140,19 @@ Scrivi in modo chiaro, obiettivo e professionale. Evita giudizi personali o emot
 
     const data = await response.json();
 
-    if (!response.ok) {
-      console.error("Errore OpenAI:", data);
+    console.log("📥 Risposta completa OpenAI:\n", JSON.stringify(data, null, 2));
+
+    if (!response.ok || !data.choices || !data.choices[0]?.message?.content) {
+      console.error("❌ Errore nella risposta OpenAI:", data);
       return res.status(500).json({ error: "Errore durante la valutazione AI." });
     }
 
-    const valutazione: string = data.choices?.[0]?.message?.content?.trim() || "Nessuna valutazione.";
+    const valutazione: string = data.choices[0].message.content.trim();
+    console.log("✅ Valutazione generata:", valutazione);
     res.json({ valutazione });
-  } catch (error) {
-    console.error("Errore AI generale:", error);
-    res.status(500).json({ error: "Errore interno AI." });
+  } catch (error: any) {
+    console.error("❌ Errore AI generale:", error);
+    res.status(500).json({ error: "Errore interno AI.", details: error.message });
   }
 });
 
