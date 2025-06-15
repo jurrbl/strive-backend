@@ -11,6 +11,7 @@ import authRoutes from "./routes/auth";
 import userRouter from "./routes/user-route";
 import graphRouter from "./routes/graph.route";
 import aiRouter from "./routes/ai.route";
+import sessionLogRouter from "./routes/sessionLog.routes";
 import tabsRouter from "./routes/tabsRouter";
 import Session from "./models/Session";
 import "./utils/passportGoogle";
@@ -52,6 +53,7 @@ app.use("/api/user", userRouter);
 app.use("/api", graphRouter);
 app.use("/api", aiRouter);
 app.use("/api/tabs", tabsRouter);
+app.use("/api", sessionLogRouter);
 
 app.get("/", (_req, res) => {
   res.send("✅ Backend attivo!");
