@@ -12,7 +12,7 @@ userRouter.get("/", async (req: Request, res: Response): Promise<any> => {
         }
     
         const user = await User.findById(userId).select("-password"); 
-        console.log('ciao broski', user) 
+     
         if (!user) {
         return res.status(404).json({ message: "User not found" });
         }
